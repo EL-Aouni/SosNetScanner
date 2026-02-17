@@ -1,6 +1,6 @@
-# APEC Pentest Facilitator - Professional Toolkit
+# Epic Pentest Facilitator - Professional Toolkit
 
-A powerful, production-grade network security scanner and penetration testing toolkit for APEC. Performs real network scanning, vulnerability detection, and provides comprehensive remediation guidance.
+A powerful, production-grade network security scanner and penetration testing toolkit. Performs real network scanning, vulnerability detection, and provides comprehensive remediation guidance.
 
 ## Features
 
@@ -27,7 +27,7 @@ A powerful, production-grade network security scanner and penetration testing to
    - **Important**: Check "Add Python to PATH" during installation
 
 2. **Extract the toolkit**
-   - Unzip `apec-pentest-toolkit.zip`
+   - Unzip `Epic-pentest-toolkit.zip`
 
 3. **Run the launcher**
    - Double-click `pentest-windows.bat`
@@ -47,8 +47,8 @@ A powerful, production-grade network security scanner and penetration testing to
 
 2. **Extract the toolkit**
    ```bash
-   unzip apec-pentest-toolkit.zip
-   cd apec-pentest-toolkit
+   unzip Epic-pentest-toolkit.zip
+   cd Epic-pentest-toolkit
    ```
 
 3. **Make launcher executable**
@@ -168,7 +168,7 @@ Additional CVEs can be added to `core/scanner.py` in the `_load_cve_database()` 
 ## File Structure
 
 ```
-apec-pentest-toolkit/
+Epic-pentest-toolkit/
 ├── core/
 │   └── scanner.py           # Core scanning engine
 ├── cli/
@@ -327,8 +327,8 @@ Schedule regular scans using cron (Linux) or Task Scheduler (Windows):
 
 ## License
 
-APEC Pentest Facilitator - Professional Toolkit
-Created for APEC pentesting team
+Epic Pentest Facilitator - Professional Toolkit
+Created for Epic pentesting team
 
 ---
 
