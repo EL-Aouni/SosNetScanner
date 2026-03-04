@@ -27,7 +27,7 @@ A powerful, production-grade network security scanner and penetration testing to
    - **Important**: Check "Add Python to PATH" during installation
 
 2. **Extract the toolkit**
-   - Unzip `Epic-pentest-toolkit.zip`
+   - Unzip `SosNetScanner.zip`
 
 3. **Run the launcher**
    - Double-click `pentest-windows.bat`
@@ -47,8 +47,8 @@ A powerful, production-grade network security scanner and penetration testing to
 
 2. **Extract the toolkit**
    ```bash
-   unzip Epic-pentest-toolkit.zip
-   cd Epic-pentest-toolkit
+   unzip SosNetScanner.zip
+   cd SosNetScanner
    ```
 
 3. **Make launcher executable**
@@ -168,7 +168,7 @@ Additional CVEs can be added to `core/scanner.py` in the `_load_cve_database()` 
 ## File Structure
 
 ```
-Epic-pentest-toolkit/
+SosNetScanner/
 ├── core/
 │   └── scanner.py           # Core scanning engine
 ├── cli/
@@ -328,7 +328,7 @@ Schedule regular scans using cron (Linux) or Task Scheduler (Windows):
 ## License
 
 Epic Pentest Facilitator - Professional Toolkit
-Created for Epic pentesting team
+SosNetScanner
 
 ---
 
