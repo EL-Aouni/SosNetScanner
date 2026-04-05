@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-APEC Pentest Toolkit - Core Network Scanner
+SosNetScanner - Core Network Scanner
 Real network scanning, device discovery, and vulnerability detection
 """
 
@@ -430,7 +430,7 @@ class ScanReport:
 
 if __name__ == '__main__':
     # Test basic functionality
-    print("APEC Pentest Toolkit - Core Scanner")
+    print("SosNetScanner - Core Scanner")
     print("=" * 50)
     
     scanner = NetworkScanner()
