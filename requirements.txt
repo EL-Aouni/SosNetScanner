@@ -1,4 +1,4 @@
-# APEC Pentest Toolkit - Python Dependencies
+# SosNetScanner  - Python Dependencies
 
 # GUI Framework
 PyQt6>=6.0.0
