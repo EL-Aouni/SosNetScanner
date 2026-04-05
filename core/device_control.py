@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-APEC Pentest Toolkit - Device Control Module
+SosNetScanner - Device Control Module
 Remote device management and command execution
 """
 
