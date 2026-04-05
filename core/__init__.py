@@ -1,4 +1,4 @@
-"""APEC Pentest Toolkit - Core Scanning Engine"""
+"""SosNetScanner - Core Scanning Engine"""
 
 from .scanner import (
     NetworkScanner,
