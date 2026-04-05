@@ -574,7 +574,7 @@ class DeviceControlManager:
 
 
 if __name__ == '__main__':
-    print("APEC Pentest Toolkit - Device Control Module")
+    print("SosNetScanner - Device Control Module")
     print("=" * 50)
     print("✓ Windows Device Controller available")
     print("✓ Linux Device Controller available")
