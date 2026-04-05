@@ -1,4 +1,4 @@
-# APEC Pentest Toolkit - Device Control Module
+# SosNetScanner  - Device Control Module
 
 Complete remote device management and command execution for Windows, Linux, IoT, and network devices.
 
