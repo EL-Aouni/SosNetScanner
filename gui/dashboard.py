@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-APEC Pentest Toolkit - GUI Dashboard
+SosNetScanner  - GUI Dashboard
 Desktop application for visualization and management
 """
 
@@ -87,7 +87,7 @@ class Dashboard(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('APEC Pentest Facilitator - Dashboard')
+        self.setWindowTitle(' Facilitator - Dashboard')
         self.setGeometry(100, 100, 1400, 900)
         
         self.scanner = NetworkScanner()
