@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-APEC Pentest Toolkit - Device Control CLI
+SosNetScanner - Device Control CLI
 Remote device management and command execution
 """
 
@@ -30,7 +30,7 @@ class DeviceControlCLI:
         """Print tool banner"""
         banner = """
 ╔═══════════════════════════════════════════════════════════╗
-║        APEC Pentest Facilitator - Device Control         ║
+║        SosNetScanner  - Device Control         ║
 ║     Remote Device Management and Command Execution       ║
 ╚═══════════════════════════════════════════════════════════╝
         """
@@ -241,7 +241,7 @@ class DeviceControlCLI:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='APEC Pentest Facilitator - Device Control',
+        description='SosNetScanner  - Device Control',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
