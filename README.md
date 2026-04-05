@@ -38,7 +38,10 @@ A powerful, production-grade network security scanner and penetration testing to
    - Or manually: `pip install PyQt6`
 
 ### Linux
-
+0.  **Install tool**
+   ```bash
+   sudo git clone https://github.com/EL-Aouni/SosNetScanner.git
+   ``` 
 1. **Install Python 3 and dependencies**
    ```bash
    sudo apt-get update
