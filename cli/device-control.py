@@ -30,8 +30,8 @@ class DeviceControlCLI:
         """Print tool banner"""
         banner = """
 ╔═══════════════════════════════════════════════════════════╗
-║        SosNetScanner  - Device Control         ║
-║     Remote Device Management and Command Execution       ║
+║            SosNetScanner  - Device Control                ║
+║     Remote Device Management and Command Execution        ║
 ╚═══════════════════════════════════════════════════════════╝
         """
         print(banner)
