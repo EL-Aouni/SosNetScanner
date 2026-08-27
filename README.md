@@ -50,7 +50,6 @@ A powerful, production-grade network security scanner and penetration testing to
 
 2. **Extract the toolkit**
    ```bash
-   unzip SosNetScanner.zip
    cd SosNetScanner
    ```
 
@@ -64,10 +63,6 @@ A powerful, production-grade network security scanner and penetration testing to
    ./pentest-linux.sh
    ```
 
-5. **Install Python dependencies**
-   ```bash
-   pip3 install PyQt6
-   ```
 
 ## Usage
 
