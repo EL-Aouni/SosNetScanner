@@ -22,8 +22,9 @@ except ImportError:
 
 try:
     from scapy.all import ARP, Ether, srp, conf
+    SCAPY_AVAILABLE = True
 except ImportError:
-    pass
+    SCAPY_AVAILABLE = False
 
 
 class NetworkScanner:
@@ -34,6 +35,7 @@ class NetworkScanner:
         self.max_threads = max_threads
         self.discovered_devices = []
         self.lock = threading.Lock()
+        self.last_scan_method = None
     
     def is_valid_cidr(self, cidr: str) -> bool:
         """Validate CIDR notation"""
@@ -112,11 +114,73 @@ class NetworkScanner:
             pass
         return "Unknown"
     
+    def arp_scan(self, cidr: str, callback=None) -> Optional[List[Dict]]:
+        """
+        Discover devices using ARP requests (scapy).
+        Much more reliable than ICMP ping: works even when hosts/firewalls
+        block ping, and it's how 'arp-scan'/most real scanners do it.
+        Requires scapy + raw socket privileges (root/administrator).
+        Returns None if scapy isn't available or the scan can't run
+        (e.g. insufficient privileges), so the caller can fall back to ping.
+        """
+        if not SCAPY_AVAILABLE:
+            return None
+
+        try:
+            conf.verb = 0  # silence scapy's own logging
+            arp_request = ARP(pdst=cidr)
+            broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
+            packet = broadcast / arp_request
+
+            answered, _ = srp(packet, timeout=self.timeout, retry=1)
+
+            devices = []
+            for _, received in answered:
+                ip = received.psrc
+                mac = received.hwsrc
+                hostname = self.get_hostname(ip)
+
+                device = {
+                    'ip': ip,
+                    'hostname': hostname,
+                    'mac': mac,
+                    'status': 'online',
+                    'timestamp': datetime.now().isoformat()
+                }
+                devices.append(device)
+                if callback:
+                    callback(device)
+
+            with self.lock:
+                self.discovered_devices = devices
+
+            return devices
+        except PermissionError:
+            # Needs root/administrator for raw sockets - let caller fall back
+            return None
+        except Exception:
+            # Any other scapy/OS-level failure - fall back to ping instead
+            # of silently reporting zero devices with no explanation.
+            return None
+
     def scan_network(self, cidr: str, callback=None) -> List[Dict]:
-        """Scan network and discover devices"""
+        """
+        Scan network and discover devices.
+
+        Tries ARP scanning first (fast, reliable, doesn't depend on ICMP
+        being allowed). Falls back to threaded ICMP ping if ARP isn't
+        available (no scapy, no root/admin privileges, or the CIDR isn't
+        on a locally-attached subnet, e.g. scanning across routers/WAN).
+        """
         if not self.is_valid_cidr(cidr):
             raise ValueError(f"Invalid CIDR: {cidr}")
-        
+
+        arp_result = self.arp_scan(cidr, callback=callback)
+        if arp_result is not None:
+            self.last_scan_method = 'arp'
+            return arp_result
+
+        self.last_scan_method = 'ping'
         ips = self.get_ip_range(cidr)
         self.discovered_devices = []
         
