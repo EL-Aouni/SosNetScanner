@@ -298,64 +298,46 @@ class OSDetection:
 
 class VulnerabilityScanner:
     """Vulnerability detection and CVE mapping"""
-    
-    def __init__(self):
+
+    # Default location of the real, external CVE database relative to this file
+    DEFAULT_DB_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'data', 'cve_database.json'
+    )
+
+    def __init__(self, db_path: str = None):
+        self.db_path = db_path or self.DEFAULT_DB_PATH
         self.cve_database = self._load_cve_database()
-    
+
     def _load_cve_database(self) -> Dict:
-        """Load CVE database"""
-        return {
-            'SSH': [
-                {
-                    'cve': 'CVE-2024-1234',
-                    'title': 'Critical RCE in OpenSSH',
-                    'severity': 'critical',
-                    'cvss': 9.8,
-                    'affected': ['OpenSSH < 8.0', 'OpenSSH < 7.9'],
-                    'description': 'Remote code execution vulnerability'
-                }
-            ],
-            'HTTP': [
-                {
-                    'cve': 'CVE-2024-5678',
-                    'title': 'XSS in Web Server',
-                    'severity': 'high',
-                    'cvss': 7.5,
-                    'affected': ['Apache 2.4', 'Nginx < 1.20'],
-                    'description': 'Cross-site scripting vulnerability'
-                }
-            ],
-            'RDP': [
-                {
-                    'cve': 'CVE-2024-3456',
-                    'title': 'RDP Vulnerability',
-                    'severity': 'high',
-                    'cvss': 8.2,
-                    'affected': ['Windows 10', 'Windows 11'],
-                    'description': 'Remote desktop protocol vulnerability'
-                }
-            ],
-            'SMB': [
-                {
-                    'cve': 'CVE-2024-7890',
-                    'title': 'SMB Authentication Bypass',
-                    'severity': 'critical',
-                    'cvss': 9.1,
-                    'affected': ['Windows < 10', 'Samba < 4.15'],
-                    'description': 'Authentication bypass in SMB'
-                }
-            ],
-            'MySQL': [
-                {
-                    'cve': 'CVE-2024-9012',
-                    'title': 'SQL Injection',
-                    'severity': 'high',
-                    'cvss': 8.6,
-                    'affected': ['MySQL 5.7', 'MySQL 8.0'],
-                    'description': 'SQL injection vulnerability'
-                }
-            ]
-        }
+        """
+        Load the CVE database from data/cve_database.json (real, published
+        CVEs, verified against NVD/vendor advisories). Falls back to a
+        small built-in set only if the JSON file is missing or unreadable,
+        so the tool still works but the person is warned it's degraded.
+        """
+        try:
+            with open(self.db_path, 'r') as f:
+                data = json.load(f)
+            data.pop('_notes', None)
+            return data
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+            print(f"[!] Warning: could not load {self.db_path} ({e}). "
+                  f"Falling back to a minimal built-in CVE set - "
+                  f"results will be incomplete.")
+            return {
+                'SSH': [
+                    {
+                        'cve': 'CVE-2024-6387',
+                        'title': 'regreSSHion - OpenSSH RCE',
+                        'severity': 'high',
+                        'cvss': 8.1,
+                        'affected': ['OpenSSH 8.5p1 - 9.7p1'],
+                        'description': 'Race condition RCE in sshd signal handler',
+                        'is_cve': True
+                    }
+                ]
+            }
     
     def scan_vulnerabilities(self, services: List[str]) -> List[Dict]:
         """Find vulnerabilities for detected services"""
@@ -378,59 +360,39 @@ class VulnerabilityScanner:
 
 
 class RemediationEngine:
-    """Generate remediation recommendations"""
-    
-    @staticmethod
-    def get_remediation(cve: str, service: str) -> Dict:
-        """Get remediation steps for a CVE"""
-        remediations = {
-            'CVE-2024-1234': {
-                'title': 'Patch OpenSSH to Latest Version',
-                'priority': 'critical',
-                'steps': [
-                    'Update package manager',
-                    'Install latest OpenSSH patch',
-                    'Restart SSH service',
-                    'Verify patch applied'
-                ],
-                'tools': ['SSH Client', 'Package Manager'],
-                'time_estimate': 15
-            },
-            'CVE-2024-5678': {
-                'title': 'Apply Web Server Security Patch',
-                'priority': 'high',
-                'steps': [
-                    'Backup current configuration',
-                    'Download latest patch',
-                    'Apply security update',
-                    'Test web server functionality',
-                    'Monitor for issues'
-                ],
-                'tools': ['Web Server', 'Testing Tools'],
-                'time_estimate': 30
-            },
-            'CVE-2024-3456': {
-                'title': 'Apply Windows Security Update',
-                'priority': 'high',
-                'steps': [
-                    'Enable Windows Update',
-                    'Check for latest patches',
-                    'Install security updates',
-                    'Restart system',
-                    'Verify patch status'
-                ],
-                'tools': ['Windows Update', 'System Tools'],
-                'time_estimate': 45
-            }
-        }
-        
-        return remediations.get(cve, {
+    """Generate remediation recommendations, sourced from cve_database.json"""
+
+    def __init__(self, db_path: str = None):
+        # Reuse VulnerabilityScanner's loader/database so remediation data
+        # can never drift out of sync with the CVE entries it belongs to.
+        self._vuln_scanner = VulnerabilityScanner(db_path=db_path)
+
+    def get_remediation(self, cve: str, service: str = None) -> Dict:
+        """Get remediation steps for a CVE from the loaded database"""
+        # Search across all services for a matching CVE id (or check the
+        # given service first, if provided, to avoid a full scan)
+        services_to_check = (
+            [service] + [s for s in self._vuln_scanner.cve_database if s != service]
+            if service else list(self._vuln_scanner.cve_database)
+        )
+
+        for svc in services_to_check:
+            for entry in self._vuln_scanner.cve_database.get(svc, []):
+                if entry.get('cve') == cve and 'remediation' in entry:
+                    return entry['remediation']
+
+        # No match found in the database - generic fallback
+        return {
             'title': f'Remediate {cve}',
             'priority': 'medium',
-            'steps': ['Review vulnerability details', 'Apply vendor patch', 'Test system'],
-            'tools': ['Vendor tools'],
+            'steps': [
+                'Look up this CVE/finding ID against your vendor\'s advisory or NVD',
+                'Apply the recommended vendor patch or configuration change',
+                'Test the affected system after remediation'
+            ],
+            'tools': ['Vendor advisory', 'NVD (nvd.nist.gov)'],
             'time_estimate': 30
-        })
+        }
 
 
 class ScanReport:
