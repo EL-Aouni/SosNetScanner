@@ -1,0 +1,325 @@
+{
+  "_notes": "Real, published CVEs (verified against NVD/vendor advisories as of Aug 2026). Matching is by open PORT/SERVICE NAME only - this tool does not fingerprint exact software versions, so a match means 'this service is open and could be running vulnerable software', not a confirmed vulnerability. Always verify the actual software version on the target before treating a match as confirmed.",
+  "SSH": [
+    {
+      "cve": "CVE-2024-6387",
+      "title": "regreSSHion - OpenSSH Signal Handler Race Condition RCE",
+      "severity": "high",
+      "cvss": 8.1,
+      "affected": [
+        "OpenSSH 8.5p1 - 9.7p1 (glibc-based Linux)"
+      ],
+      "description": "Unauthenticated remote code execution as root via a race condition in sshd's SIGALRM handler when a client fails to authenticate within LoginGraceTime. Regression of CVE-2006-5051.",
+      "remediation": {
+        "title": "Update OpenSSH to 9.8p1 or later",
+        "priority": "high",
+        "steps": [
+          "Check current version: ssh -V",
+          "Update via package manager (apt/yum/dnf) or compile OpenSSH >= 9.8p1",
+          "If patching isn't immediately possible, set LoginGraceTime 0 in sshd_config as a temporary mitigation (note: this exposes a DoS risk)",
+          "Restart sshd: systemctl restart sshd",
+          "Verify version again with ssh -V"
+        ],
+        "tools": [
+          "Package manager",
+          "SSH client"
+        ],
+        "time_estimate": 20
+      },
+      "is_cve": true
+    }
+  ],
+  "FTP": [
+    {
+      "cve": "CVE-2011-2523",
+      "title": "vsftpd 2.3.4 Backdoor Command Execution",
+      "severity": "critical",
+      "cvss": 9.8,
+      "affected": [
+        "vsftpd 2.3.4 (only builds downloaded 2011-06-30 to 2011-07-03)"
+      ],
+      "description": "A backdoor was injected into the vsftpd 2.3.4 source tarball. A specific string sent during login opens a root shell on TCP port 6200.",
+      "remediation": {
+        "title": "Verify vsftpd is not the backdoored 2.3.4 build",
+        "priority": "critical",
+        "steps": [
+          "Check version: vsftpd -v or check installed package version",
+          "If running the compromised 2.3.4 build, immediately update to a current vsftpd release from your distro's repo",
+          "Check for an unexpected listener on TCP port 6200",
+          "Review FTP server and system logs for signs of prior compromise",
+          "Restart the FTP service after updating"
+        ],
+        "tools": [
+          "Package manager",
+          "netstat/ss"
+        ],
+        "time_estimate": 25
+      },
+      "is_cve": true
+    }
+  ],
+  "RDP": [
+    {
+      "cve": "CVE-2019-0708",
+      "title": "BlueKeep - Windows RDP Remote Code Execution",
+      "severity": "critical",
+      "cvss": 9.8,
+      "affected": [
+        "Windows XP",
+        "Windows Server 2003",
+        "Windows Vista",
+        "Windows 7",
+        "Windows Server 2008/2008 R2"
+      ],
+      "description": "Pre-authentication, wormable RCE in Remote Desktop Services. No user interaction or credentials required. Actively exploited in the wild.",
+      "remediation": {
+        "title": "Patch Windows RDP (MS security update) or disable RDP",
+        "priority": "critical",
+        "steps": [
+          "Install the May 2019 Microsoft security update (or later cumulative update) covering CVE-2019-0708",
+          "If patching isn't possible, disable Remote Desktop Services entirely, or restrict RDP (port 3389) to a VPN/jump host only",
+          "Enable Network Level Authentication (NLA) as a partial mitigation",
+          "Block port 3389 at the perimeter firewall for any system exposed to the internet",
+          "Confirm patch status via Windows Update history"
+        ],
+        "tools": [
+          "Windows Update",
+          "Firewall / VPN"
+        ],
+        "time_estimate": 45
+      },
+      "is_cve": true
+    }
+  ],
+  "SMB": [
+    {
+      "cve": "CVE-2017-0144",
+      "title": "EternalBlue - SMBv1 Remote Code Execution",
+      "severity": "critical",
+      "cvss": 8.8,
+      "affected": [
+        "Windows Vista/7/8.1/10 (early builds)",
+        "Windows Server 2008/2012/2016 with SMBv1 enabled"
+      ],
+      "description": "Remote code execution in the SMBv1 server via crafted packets. Used by the WannaCry and NotPetya worms to spread globally in 2017.",
+      "remediation": {
+        "title": "Disable SMBv1 and apply MS17-010",
+        "priority": "critical",
+        "steps": [
+          "Apply the MS17-010 security update / latest cumulative Windows update",
+          "Disable the SMBv1 protocol: Windows Features > SMB 1.0/CIFS File Sharing Support > uncheck",
+          "Or via PowerShell: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol",
+          "Block TCP 445 at the network perimeter for internet-facing systems",
+          "Confirm SMBv1 is disabled with Get-SmbServerConfiguration"
+        ],
+        "tools": [
+          "Windows Update",
+          "PowerShell"
+        ],
+        "time_estimate": 30
+      },
+      "is_cve": true
+    }
+  ],
+  "HTTP": [
+    {
+      "cve": "CVE-2021-44228",
+      "title": "Log4Shell - Apache Log4j2 Remote Code Execution",
+      "severity": "critical",
+      "cvss": 10.0,
+      "affected": [
+        "Any Java web app using Apache Log4j2 2.0-beta9 through 2.14.1"
+      ],
+      "description": "Unauthenticated RCE via JNDI lookups in log messages. One of the most widely exploited vulnerabilities ever disclosed; affects any web app on this port built on vulnerable Log4j2 versions, not the web server software itself.",
+      "remediation": {
+        "title": "Upgrade Log4j2 to 2.17.1+ (or later per app stack)",
+        "priority": "critical",
+        "steps": [
+          "Identify whether the web application uses Log4j2 and which version (check WEB-INF/lib or build dependencies)",
+          "Upgrade to Log4j2 2.17.1 or later for Java 8+ (or the appropriate patched line for older Java)",
+          "If upgrading isn't immediately possible, set log4j2.formatMsgNoLookups=true or remove the JndiLookup class from the classpath as a mitigation",
+          "Restart the application after patching",
+          "Scan outbound logs/WAF for JNDI/LDAP exploitation attempts to check for prior compromise"
+        ],
+        "tools": [
+          "Dependency scanner",
+          "WAF"
+        ],
+        "time_estimate": 40
+      },
+      "is_cve": true
+    }
+  ],
+  "HTTPS": [
+    {
+      "cve": "CVE-2021-44228",
+      "title": "Log4Shell - Apache Log4j2 Remote Code Execution",
+      "severity": "critical",
+      "cvss": 10.0,
+      "affected": [
+        "Any Java web app using Apache Log4j2 2.0-beta9 through 2.14.1"
+      ],
+      "description": "Unauthenticated RCE via JNDI lookups in log messages, same as the HTTP entry - relevant to any TLS-terminated Java web app on this port.",
+      "remediation": {
+        "title": "Upgrade Log4j2 to 2.17.1+ (or later per app stack)",
+        "priority": "critical",
+        "steps": [
+          "Identify whether the web application uses Log4j2 and which version",
+          "Upgrade to Log4j2 2.17.1 or later",
+          "Mitigate with log4j2.formatMsgNoLookups=true if an immediate upgrade isn't possible",
+          "Restart the application after patching",
+          "Check logs/WAF for exploitation attempts"
+        ],
+        "tools": [
+          "Dependency scanner",
+          "WAF"
+        ],
+        "time_estimate": 40
+      },
+      "is_cve": true
+    }
+  ],
+  "Telnet": [
+    {
+      "cve": "FINDING-TELNET-CLEARTEXT",
+      "title": "Telnet Transmits Credentials and Data in Cleartext",
+      "severity": "high",
+      "cvss": 7.5,
+      "affected": [
+        "All Telnet servers by protocol design"
+      ],
+      "description": "Telnet has no built-in encryption. Credentials, commands, and session data are all sent in plaintext and can be captured by anyone on the network path. Not a single CVE - this is an inherent protocol weakness, which is why Telnet is considered obsolete for anything but isolated legacy/serial console use.",
+      "remediation": {
+        "title": "Disable Telnet and use SSH instead",
+        "priority": "high",
+        "steps": [
+          "Disable the Telnet service/daemon on the device",
+          "Enable SSH as a replacement if the device supports it",
+          "If Telnet must remain (e.g. legacy hardware), restrict access to an isolated management VLAN only",
+          "Never use Telnet across untrusted or internet-facing networks"
+        ],
+        "tools": [
+          "Device admin console"
+        ],
+        "time_estimate": 15
+      },
+      "is_cve": false
+    }
+  ],
+  "MongoDB": [
+    {
+      "cve": "FINDING-MONGODB-NOAUTH",
+      "title": "MongoDB Running Without Authentication Enabled",
+      "severity": "critical",
+      "cvss": 9.1,
+      "affected": [
+        "MongoDB instances with authorization not enabled (common default in older/self-hosted setups)"
+      ],
+      "description": "Older or misconfigured MongoDB deployments bind to all interfaces with no authentication required, allowing anyone who can reach the port to read/write/delete all data. This caused mass ransomware-style database wipes ('Mongo lock' attacks) starting in 2017. Not a single CVE - it's a common dangerous misconfiguration.",
+      "remediation": {
+        "title": "Enable authentication and bind to localhost/private network only",
+        "priority": "critical",
+        "steps": [
+          "Enable access control: set security.authorization: enabled in mongod.conf",
+          "Create an admin user with a strong password before restarting with auth enabled",
+          "Bind MongoDB to localhost or an internal-only interface (bindIp), not 0.0.0.0",
+          "Add firewall rules restricting TCP 27017 to trusted hosts only",
+          "Restart mongod and verify unauthenticated connections are refused"
+        ],
+        "tools": [
+          "mongod.conf",
+          "Firewall"
+        ],
+        "time_estimate": 30
+      },
+      "is_cve": false
+    }
+  ],
+  "Elasticsearch": [
+    {
+      "cve": "FINDING-ELASTIC-NOAUTH",
+      "title": "Elasticsearch Exposed Without Authentication",
+      "severity": "critical",
+      "cvss": 9.1,
+      "affected": [
+        "Elasticsearch clusters with security features disabled (common in versions before 8.x default-on security)"
+      ],
+      "description": "Elasticsearch historically shipped with no authentication by default. Instances exposed to the network without security enabled allow full read/write access to all indexed data and have been repeatedly targeted for data theft and ransom wipes.",
+      "remediation": {
+        "title": "Enable Elasticsearch security features and restrict network exposure",
+        "priority": "critical",
+        "steps": [
+          "Enable xpack.security.enabled: true in elasticsearch.yml (default-on in 8.x+)",
+          "Set up authentication (built-in users or your identity provider) and TLS for transport/HTTP layers",
+          "Bind to a private network interface, not a publicly routable one",
+          "Add firewall rules restricting TCP 9200/9300 to trusted hosts",
+          "Restart the cluster and verify unauthenticated requests are rejected"
+        ],
+        "tools": [
+          "elasticsearch.yml",
+          "Firewall"
+        ],
+        "time_estimate": 35
+      },
+      "is_cve": false
+    }
+  ],
+  "VNC": [
+    {
+      "cve": "FINDING-VNC-WEAKAUTH",
+      "title": "VNC Server With Weak/No Authentication",
+      "severity": "high",
+      "cvss": 8.2,
+      "affected": [
+        "VNC servers configured with no password or weak legacy DES-based authentication"
+      ],
+      "description": "Many VNC implementations default to weak authentication or none at all, and traffic is often unencrypted, giving full remote desktop control to anyone who can reach the port.",
+      "remediation": {
+        "title": "Set a strong VNC password and tunnel over SSH/VPN",
+        "priority": "high",
+        "steps": [
+          "Set a strong VNC password (avoid legacy 8-character DES-based auth if a stronger scheme is available)",
+          "Tunnel VNC traffic over SSH or a VPN instead of exposing it directly",
+          "Restrict access to TCP 5900 via firewall rules to trusted hosts only",
+          "Disable VNC entirely if remote desktop access isn't actively needed"
+        ],
+        "tools": [
+          "VNC server config",
+          "SSH/VPN",
+          "Firewall"
+        ],
+        "time_estimate": 20
+      },
+      "is_cve": false
+    }
+  ],
+  "MySQL": [
+    {
+      "cve": "FINDING-MYSQL-EXPOSED",
+      "title": "MySQL Exposed to Untrusted Networks",
+      "severity": "high",
+      "cvss": 7.5,
+      "affected": [
+        "MySQL/MariaDB instances bound to a public or untrusted-reachable interface"
+      ],
+      "description": "Database servers reachable from untrusted networks are a common entry point for credential-stuffing and brute-force attacks, and increase the blast radius of any future MySQL CVE. This is a generic exposure finding, not a specific CVE - check the actual MySQL/MariaDB version against current CVEs separately.",
+      "remediation": {
+        "title": "Restrict MySQL to trusted hosts and check for outstanding patches",
+        "priority": "high",
+        "steps": [
+          "Bind MySQL to localhost or a private network interface (bind-address) unless remote access is explicitly required",
+          "Restrict TCP 3306 via firewall rules to known application servers only",
+          "Check the running MySQL/MariaDB version with SELECT VERSION(); and compare against your vendor's current CVE advisories",
+          "Enforce strong passwords and disable unused default accounts",
+          "Apply the latest minor version security patches"
+        ],
+        "tools": [
+          "mysql client",
+          "Firewall"
+        ],
+        "time_estimate": 25
+      },
+      "is_cve": false
+    }
+  ]
+}
