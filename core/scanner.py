@@ -244,7 +244,7 @@ class PortScanner:
         for port in ports:
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(self.timeout / 1000)
+                sock.settimeout(self.timeout)
                 result = sock.connect_ex((ip, port))
                 sock.close()
                 
