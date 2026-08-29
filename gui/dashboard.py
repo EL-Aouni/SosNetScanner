@@ -54,14 +54,41 @@ class ScanWorker(QThread):
             vuln_scanner = VulnerabilityScanner()
             
             if self.scan_type == 'network':
+                # Full security scan: discover devices, then port + vuln
+                # scan each one, so the Vulnerabilities tab shows real data
+                # instead of nothing.
                 self.progress.emit(f"Scanning network {self.target}...")
                 devices = scanner.scan_network(self.target)
-                self.finished.emit({'type': 'network', 'data': devices})
+
+                all_vulns = []
+                for device in devices:
+                    self.progress.emit(f"Analyzing {device['ip']}...")
+                    ports = port_scanner.scan_ports(device['ip'])
+                    services = [p['service'] for p in ports]
+                    vulns = vuln_scanner.scan_vulnerabilities(services)
+                    all_vulns.extend(vulns)
+
+                report = ScanReport().generate_report(devices, all_vulns)
+                self.finished.emit({'type': 'network', 'data': report})
             
             elif self.scan_type == 'ports':
                 self.progress.emit(f"Scanning ports on {self.target}...")
                 ports = port_scanner.scan_ports(self.target)
                 self.finished.emit({'type': 'ports', 'data': ports})
+
+            elif self.scan_type == 'analyze':
+                # Full single-device analysis: ports + OS + vulnerabilities,
+                # so the Device Analysis tab actually shows vulnerabilities
+                # instead of leaving that box permanently empty.
+                self.progress.emit(f"Analyzing {self.target}...")
+                ports = port_scanner.scan_ports(self.target)
+                services = [p['service'] for p in ports]
+                os_type = OSDetection.detect_os(self.target, ports)
+                vulns = vuln_scanner.scan_vulnerabilities(services)
+                self.finished.emit({
+                    'type': 'analyze',
+                    'data': {'ports': ports, 'os': os_type, 'vulnerabilities': vulns}
+                })
             
             elif self.scan_type == 'full':
                 self.progress.emit(f"Starting full scan on {self.target}...")
@@ -96,6 +123,7 @@ class Dashboard(QMainWindow):
         self.report_gen = ScanReport()
         
         self.scan_results = {}
+        self.last_vulnerabilities = []
         self.current_scan_thread = None
         
         self.init_ui()
@@ -223,7 +251,7 @@ class Dashboard(QMainWindow):
         # CVE input
         input_layout = QHBoxLayout()
         input_layout.addWidget(QLabel("CVE ID:"))
-        self.cve_input = QLineEdit("CVE-2024-1234")
+        self.cve_input = QLineEdit("CVE-2024-6387")
         input_layout.addWidget(self.cve_input)
         
         get_btn = QPushButton("Get Remediation")
@@ -289,7 +317,7 @@ class Dashboard(QMainWindow):
         """Analyze single device"""
         ip = self.analysis_ip.text()
         
-        self.current_scan_thread = ScanWorker('ports', ip)
+        self.current_scan_thread = ScanWorker('analyze', ip)
         self.current_scan_thread.finished.connect(self.on_analysis_finished)
         self.current_scan_thread.error.connect(self.on_scan_error)
         self.current_scan_thread.start()
@@ -299,8 +327,12 @@ class Dashboard(QMainWindow):
         self.scan_results = result['data']
         
         if result['type'] == 'network':
+            # result['data'] is now a full report: {summary, devices, vulnerabilities}
+            report = result['data']
+            devices = report['devices']
+
             self.scan_table.setRowCount(0)
-            for device in result['data']:
+            for device in devices:
                 row = self.scan_table.rowCount()
                 self.scan_table.insertRow(row)
                 self.scan_table.setItem(row, 0, QTableWidgetItem(device['ip']))
@@ -308,19 +340,40 @@ class Dashboard(QMainWindow):
                 self.scan_table.setItem(row, 2, QTableWidgetItem(device['mac']))
                 self.scan_table.setItem(row, 3, QTableWidgetItem(device['status']))
             
-            self.scan_status.setText(f"Scan complete: {len(result['data'])} device(s) found")
+            self.scan_status.setText(
+                f"Scan complete: {len(devices)} device(s), "
+                f"{len(report['vulnerabilities'])} vulnerabilities found"
+            )
+
+            # Feed the real results into the Vulnerabilities tab instead of
+            # leaving it on hardcoded sample data.
+            self.last_vulnerabilities = report['vulnerabilities']
+            self.update_vulnerabilities_table()
         
         self.scan_progress.setVisible(False)
         self.statusBar().showMessage("Scan completed successfully")
     
     def on_analysis_finished(self, result):
         """Handle analysis completion"""
+        data = result['data']
+
         self.ports_table.setRowCount(0)
-        for port in result['data']:
+        for port in data['ports']:
             row = self.ports_table.rowCount()
             self.ports_table.insertRow(row)
             self.ports_table.setItem(row, 0, QTableWidgetItem(str(port['port'])))
             self.ports_table.setItem(row, 1, QTableWidgetItem(port['service']))
+
+        vulns = data['vulnerabilities']
+        if vulns:
+            text = f"OS: {data['os']}\n\n"
+            text += f"{len(vulns)} vulnerabilit{'y' if len(vulns) == 1 else 'ies'} found:\n\n"
+            for v in vulns:
+                text += f"[{v['severity'].upper()}] {v['cve']} - {v['title']} (CVSS {v['cvss']})\n"
+                text += f"    {v['description']}\n\n"
+        else:
+            text = f"OS: {data['os']}\n\nNo known vulnerabilities matched for the open services found."
+        self.analysis_vulns.setText(text)
     
     def on_scan_error(self, error):
         """Handle scan error"""
@@ -332,19 +385,12 @@ class Dashboard(QMainWindow):
         self.statusBar().showMessage(message)
     
     def update_vulnerabilities_table(self):
-        """Update vulnerabilities table based on filter"""
+        """Update vulnerabilities table based on filter, using real results
+        from the last scan (empty until a scan has been run)."""
         severity = self.severity_filter.currentText().lower()
-        
-        vulns = self.vuln_scanner.vulnerabilities if hasattr(self.vuln_scanner, 'vulnerabilities') else []
-        
+
         self.vulns_table.setRowCount(0)
-        # Add sample vulnerabilities
-        sample_vulns = [
-            {'cve': 'CVE-2024-1234', 'title': 'Critical RCE', 'severity': 'critical', 'cvss': 9.8},
-            {'cve': 'CVE-2024-5678', 'title': 'SQL Injection', 'severity': 'high', 'cvss': 8.6},
-        ]
-        
-        for vuln in sample_vulns:
+        for vuln in self.last_vulnerabilities:
             if severity == 'all' or vuln['severity'] == severity:
                 row = self.vulns_table.rowCount()
                 self.vulns_table.insertRow(row)
@@ -352,11 +398,12 @@ class Dashboard(QMainWindow):
                 self.vulns_table.setItem(row, 1, QTableWidgetItem(vuln['title']))
                 self.vulns_table.setItem(row, 2, QTableWidgetItem(vuln['severity']))
                 self.vulns_table.setItem(row, 3, QTableWidgetItem(str(vuln['cvss'])))
+                self.vulns_table.setItem(row, 4, QTableWidgetItem(vuln.get('description', '')))
     
     def show_remediation(self):
         """Show remediation for CVE"""
         cve = self.cve_input.text()
-        remediation = RemediationEngine.get_remediation(cve, '')
+        remediation = RemediationEngine().get_remediation(cve, '')
         
         text = f"CVE: {cve}\n"
         text += f"Title: {remediation['title']}\n"
